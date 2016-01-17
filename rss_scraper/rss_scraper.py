@@ -1,11 +1,13 @@
 
 import re
+import pytz
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import requests
 from bs4 import BeautifulSoup
-import PyRSS2Gen as pyrss
+from feedgen.feed import FeedGenerator
+from feedgen.entry import FeedEntry
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -29,7 +31,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/xml")
         self.end_headers()
 
-        rss.run(self.wfile)
+        self.wfile.write(rss.gen())
 
 
 class RssSource(object):
@@ -44,39 +46,44 @@ class RssSource(object):
     def __init__(self, rss):
         self.__rss = rss
 
-    def __request(self):
-        return requests.get(self.__rss.link, headers=self.HTTP_HEADERS).text
-
     def _parse(self, data):
         raise NotImplementedError
 
-    def run(self, fd):
-        self.__rss.items = self._parse(self.__request())
-        self.__rss.write_xml(fd)
+    def gen(self):
+        # uncomment this when using proper urls
+        # data = requests.get(self.__rss.link, headers=self.HTTP_HEADERS).text
+        data = '<html><body>rss</body></html>'
+
+        self.__rss.entry(self._parse(data), replace=True)
+        return self.__rss.rss_str()
 
 
 class SomeSource(RssSource):
     def __init__(self):
-        rss = pyrss.RSS2(
-            title='Feed title',
-            link='Feed url',
-            description='Feed description',
-            lastBuildDate=datetime.now()
-        )
+        rss = FeedGenerator()
+        rss.load_extension('dc')
+
+        rss.title('Feed title')
+        rss.link(href='Feed url', rel='self')
+        rss.description('Feed description')
+
         super(SomeSource, self).__init__(rss)
 
     def _parse(self, data):
         soup = BeautifulSoup(data, 'html.parser')
 
-        # imagine parsing the soup here and return a list of
-        # pyrss.RSSItem(
-        #     title='item title',
-        #     link='item url',
-        #     description='item content',
-        #     pubDate=datetime.now()
-        # )
+        e = FeedEntry()
+        e.load_extension('dc')
 
-        return []
+        e.title('title')
+        e.link(href='link', rel='alternate')
+
+        e.dc.dc_creator('author')
+        e.description('description')
+        e.content(soup.body.text, type='CDATA')
+        e.pubdate(datetime.now(pytz.utc))
+
+        return [e]
 
 
 if __name__ == '__main__':
