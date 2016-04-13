@@ -9,6 +9,8 @@ from source import RssHtmlSource
 
 
 class SampleSource(RssHtmlSource):
+    RSS_ID = 'sample'
+
     def __init__(self, rss_path, rss_params):
         rss = FeedGenerator()
         rss.load_extension('dc')

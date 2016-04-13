@@ -10,8 +10,8 @@ class Handler(BaseHTTPRequestHandler):
     __rss = {}
 
     @classmethod
-    def register_rss(cls, path, rss_class):
-        cls.__rss[path] = rss_class
+    def register_rss(cls, rss_class):
+        cls.__rss[rss_class.RSS_ID] = rss_class
 
     def do_HEAD(self):
         self.send_response(200)
@@ -37,7 +37,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     # since HTTPServer doesnt take handler instances, we need to put all this as a classmethod
-    Handler.register_rss('sample', SampleSource)
+    Handler.register_rss(SampleSource)
 
     HTTPServer.allow_reuse_address = False
     httpd = HTTPServer(('127.0.0.1', 9001), Handler)
