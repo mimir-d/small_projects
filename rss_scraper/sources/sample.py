@@ -9,18 +9,18 @@ from source import RssHtmlSource
 
 
 class SampleSource(RssHtmlSource):
-    def __init__(self):
+    def __init__(self, rss_path, rss_params):
         rss = FeedGenerator()
         rss.load_extension('dc')
 
-        rss.title('Feed title')
+        rss.title('Feed title: %s' % rss_path)
         rss.link(href='http://example.com', rel='self')
         rss.description('Feed description')
 
         super(SampleSource, self).__init__(rss)
 
-    def _parse_html(self, data):
-        soup = BeautifulSoup(data, 'html.parser')
+    def _parse_html(self, html):
+        soup = BeautifulSoup(html, 'html.parser')
 
         ret = []
         for i, li in enumerate(soup.find_all('p')):

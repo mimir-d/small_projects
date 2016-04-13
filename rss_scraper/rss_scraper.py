@@ -1,5 +1,8 @@
 
+import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qsl
+
 from sources.sample import SampleSource
 
 
@@ -7,8 +10,8 @@ class Handler(BaseHTTPRequestHandler):
     __rss = {}
 
     @classmethod
-    def register_rss(cls, path, rss):
-        cls.__rss[path] = rss()
+    def register_rss(cls, path, rss_class):
+        cls.__rss[path] = rss_class
 
     def do_HEAD(self):
         self.send_response(200)
@@ -16,21 +19,25 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        rss = self.__rss.get(self.path, None)
-        if rss is None:
+        # first part of the url should be the rss identifier
+        url = urlparse(self.path)
+        rss_id, rss_path = re.match('/(?P<id>[^/]+)(?P<other>.*)', url.path).groups()
+
+        rss_class = self.__rss.get(rss_id, None)
+        if rss_class is None:
             return self.send_error(404)
 
         self.send_response(200)
         self.send_header("Content-type", "text/xml")
         self.end_headers()
 
-        rss_data = rss.gen()
-        self.wfile.write(rss_data)
+        rss = rss_class(rss_path, dict(parse_qsl(url.query)))
+        self.wfile.write(rss.gen())
 
 
 if __name__ == '__main__':
     # since HTTPServer doesnt take handler instances, we need to put all this as a classmethod
-    Handler.register_rss('/sample', SampleSource)
+    Handler.register_rss('sample', SampleSource)
 
     HTTPServer.allow_reuse_address = False
     httpd = HTTPServer(('127.0.0.1', 9001), Handler)
