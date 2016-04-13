@@ -19,11 +19,16 @@ class SampleSource(RssHtmlSource):
 
         super(SampleSource, self).__init__(rss)
 
+    def _get_entries(self):
+        # placeholder html for sample
+        html = '<html><body><ul><li>item 1</li><li>item 2</li></ul></body></html>'
+        return self._parse_html(html)
+
     def _parse_html(self, html):
         soup = BeautifulSoup(html, 'html.parser')
 
         ret = []
-        for i, li in enumerate(soup.find_all('p')):
+        for i, li in enumerate(soup.find_all('li')):
             e = FeedEntry()
             e.load_extension('dc')
 
