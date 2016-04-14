@@ -2,6 +2,7 @@
 import pytz
 from datetime import datetime
 import requests
+from concurrent.futures import ThreadPoolExecutor as ThreadPool
 from lxml import etree
 from bs4 import BeautifulSoup
 from feedgen.feed import FeedGenerator
@@ -51,9 +52,15 @@ class TheCodingLoveSource(RssSource):
 
     def _get_entries(self):
         ret = []
-
         chan_tag = self.__rss_xml.find('channel')
-        for item_tag in chan_tag.findall('item'):
+
+        with ThreadPool(max_workers=20) as pool:
+            item_contents = pool.map(
+                self.__get_html_content,
+                [item_tag.find('link').text for item_tag in chan_tag.findall('item')]
+            )
+
+        for item_tag, content in zip(chan_tag.findall('item'), item_contents):
             e = FeedEntry()
             e.load_extension('dc')
 
@@ -67,7 +74,7 @@ class TheCodingLoveSource(RssSource):
             e.guid(item_details['guid'])
             e.dc.dc_creator(item_details['{%s}creator' % self.__DC_NS])
             e.pubdate(datetime.strptime(item_details['pubDate'], self.__TIME_FORMAT))
-            e.content('<p>%s</p>' % self.__get_html_content(item_details['link']), type='CDATA')
+            e.content('<p>%s</p>' % content, type='CDATA')
 
             ret.append(e)
 
