@@ -10,16 +10,20 @@ from source import RssHtmlSource
 
 class SampleSource(RssHtmlSource):
     RSS_ID = 'sample'
+    __URL = 'http://example.com'
 
     def __init__(self, rss_path, rss_params):
+        super().__init__(self.__URL, rss_path, rss_params)
+
+    def _get_header(self):
         rss = FeedGenerator()
         rss.load_extension('dc')
 
-        rss.title('Feed title: %s' % rss_path)
-        rss.link(href='http://example.com', rel='self')
+        rss.title('Feed title: %s' % self._rss_path)
+        rss.link(href=self.__URL, rel='self')
         rss.description('Feed description')
 
-        super(SampleSource, self).__init__(rss)
+        return rss
 
     def _get_entries(self):
         # placeholder html for sample
@@ -35,7 +39,7 @@ class SampleSource(RssHtmlSource):
             e.load_extension('dc')
 
             e.title('title: <p> #%d' % i)
-            e.link(href='http://%d.example.com' % i, rel='alternate')
+            e.link(href='http://%d.%s' % (i, self.__URL), rel='alternate')
 
             e.dc.dc_creator('author')
             e.description('description: <p> #%d' % i)

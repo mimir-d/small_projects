@@ -21,7 +21,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         # first part of the url should be the rss identifier
         url = urlparse(self.path)
-        rss_id, rss_path = re.match('/(?P<id>[^/]+)(?P<other>.*)', url.path).groups()
+        rss_id, rss_path = re.match('/([^/]+)(.*)', url.path).groups()
 
         rss_class = self.__rss.get(rss_id, None)
         if rss_class is None:

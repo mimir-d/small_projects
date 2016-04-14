@@ -3,8 +3,17 @@ import requests
 
 
 class RssSource(object):
-    def __init__(self, rss):
-        self.__rss = rss
+    def __init__(self, rss_path, rss_params):
+        self._rss_path = rss_path
+        self._rss_params = rss_params
+
+    def _get_header(self):
+        '''
+        Abstract method.
+        Returns:
+            rss header object
+        '''
+        raise NotImplementedError('abstract method')
 
     def _get_entries(self):
         '''
@@ -15,12 +24,9 @@ class RssSource(object):
         raise NotImplementedError('abstract method')
 
     def gen(self):
-        self.__rss.entry(self._get_entries(), replace=True)
-        return self.__rss.rss_str()
-
-    @property
-    def url(self):
-        return self.__rss.link()[0]['href']
+        rss = self._get_header()
+        rss.entry(self._get_entries(), replace=True)
+        return rss.rss_str()
 
 
 class RssHtmlSource(RssSource):
@@ -31,9 +37,12 @@ class RssHtmlSource(RssSource):
         'DNT': 1,
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36'
     }
+    def __init__(self, url, rss_path, rss_params):
+        super().__init__(rss_path, rss_params)
+        self.__url = url
 
     def _get_entries(self):
-        html = requests.get(self.url, headers=self.HTTP_HEADERS).text
+        html = requests.get(self.__url, headers=self.HTTP_HEADERS).text
         return self._parse_html(html)
 
     def _parse_html(self, html):
