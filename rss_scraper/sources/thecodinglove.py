@@ -1,10 +1,9 @@
 
-import pytz
-from datetime import datetime
 import requests
 from concurrent.futures import ThreadPoolExecutor as ThreadPool
 from lxml import etree
 from bs4 import BeautifulSoup
+import dateutil.parser as dateparser
 from feedgen.feed import FeedGenerator
 from feedgen.entry import FeedEntry
 from feedgen.ext.dc import DcBaseExtension
@@ -20,7 +19,6 @@ class TheCodingLoveSource(RssSource):
         'User-Agent': 'RSSOwl/2.1.6.201212081830 (Windows; U; en)'
     }
     __DC_NS = DcBaseExtension().extend_ns()['dc']
-    __TIME_FORMAT = '%a, %d %b %Y %H:%M:%S %z'
 
     def __get_xml(self):
         rss = requests.get('%s/rss' % self.__URL, headers=self.__HTTP_HEADERS).text
@@ -73,7 +71,7 @@ class TheCodingLoveSource(RssSource):
             e.link(href=item_details['link'], rel='alternate')
             e.guid(item_details['guid'])
             e.dc.dc_creator(item_details['{%s}creator' % self.__DC_NS])
-            e.pubdate(datetime.strptime(item_details['pubDate'], self.__TIME_FORMAT))
+            e.pubdate(dateparser.parse(item_details['pubDate']))
             e.content('<p>%s</p>' % content, type='CDATA')
 
             ret.append(e)
