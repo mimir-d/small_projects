@@ -8,6 +8,10 @@ from apiclient.discovery import build as youtube_build
 from source import RssSource
 from logger import log
 
+# disable oauth2 lock warnings from multithreading
+import logging
+logging.getLogger('oauth2client.contrib.locked_file').setLevel(logging.ERROR)
+
 
 class YoutubeSource(RssSource):
     RSS_ID = 'youtube'
