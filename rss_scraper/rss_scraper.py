@@ -6,6 +6,8 @@ from urllib.parse import urlparse, parse_qsl
 from sources.sample import SampleSource
 from sources.thecodinglove import TheCodingLoveSource
 
+from logger import log
+
 
 class Handler(BaseHTTPRequestHandler):
     __rss = {}
@@ -32,8 +34,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/xml")
         self.end_headers()
 
-        rss = rss_class(rss_path, dict(parse_qsl(url.query)))
-        self.wfile.write(rss.gen())
+        try:
+            rss = rss_class(rss_path, dict(parse_qsl(url.query)))
+            self.wfile.write(rss.gen())
+        except Exception as e:
+            log.exception('Generate feed %s' % self.path)
+            return self.send_error(400, 'Exception: %s' % e)
 
 
 if __name__ == '__main__':
