@@ -2,3 +2,4 @@ requests>=2.9.1
 beautifulsoup4>=4.4.1
 pytz>=2015.7
 feedgen>=0.3.2
+google-api-python-client>=1.5.0

@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qsl
 
 from sources.sample import SampleSource
 from sources.thecodinglove import TheCodingLoveSource
+from sources.youtube import YoutubeSource
 
 from logger import log
 
@@ -46,6 +47,7 @@ if __name__ == '__main__':
     # since HTTPServer doesnt take handler instances, we need to put all this as a classmethod
     Handler.register_rss(SampleSource)
     Handler.register_rss(TheCodingLoveSource)
+    Handler.register_rss(YoutubeSource)
 
     HTTPServer.allow_reuse_address = False
     httpd = HTTPServer(('127.0.0.1', 9001), Handler)
