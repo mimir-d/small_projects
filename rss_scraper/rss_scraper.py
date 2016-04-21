@@ -1,6 +1,7 @@
 
 import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qsl
 
 from sources.sample import SampleSource
@@ -43,14 +44,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_error(400, 'Exception: %s' % e)
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    pass
+
+
 if __name__ == '__main__':
     # since HTTPServer doesnt take handler instances, we need to put all this as a classmethod
     Handler.register_rss(SampleSource)
     Handler.register_rss(TheCodingLoveSource)
     Handler.register_rss(YoutubeSource)
 
-    HTTPServer.allow_reuse_address = False
-    httpd = HTTPServer(('127.0.0.1', 9001), Handler)
+    ThreadedHTTPServer.allow_reuse_address = False
+    httpd = ThreadedHTTPServer(('127.0.0.1', 9001), Handler)
     print('server starting')
     try:
         httpd.serve_forever()
