@@ -1,5 +1,7 @@
 
 from os import path
+import re
+import string
 import dateutil.parser as dateparser
 from feedgen.feed import FeedGenerator
 from feedgen.entry import FeedEntry
@@ -24,9 +26,13 @@ class YoutubeSource(RssSource):
     __PLAYLIST_URL = 'https://www.youtube.com/playlist?list=%s'
     __VIDEO_URL = 'https://www.youtube.com/watch?v=%s'
 
+    # gruber url regex
+    # http://stackoverflow.com/questions/1986059/gruber-s-url-regular-expression-in-python
+    __URL_RE = r'\b(([\w-]+://?|www[.])[^\s()<>]+(?:\([\w\d]+\)|([^%s\s]|/)))' % re.escape(string.punctuation)
+
     __CONTENT = '''
         <p><img src='%(image)s'/></p>
-        <p>%(desc)s</p>
+        <p>%(content)s</p>
     '''
 
     def __init__(self, rss_path, rss_params):
@@ -57,6 +63,10 @@ class YoutubeSource(RssSource):
         except:
             log.exception()
             raise ValueError('invalid rss path type')
+
+    def __parse_content(self, snippet):
+        desc = re.sub(self.__URL_RE, r'<a href="\1">\1</a>', snippet['description'])
+        return '<br>'.join(desc.split('\n'))
 
     def _get_header(self):
         title, desc, self.__uploads_id = self.__get_channel_details(self._rss_path)
@@ -90,7 +100,7 @@ class YoutubeSource(RssSource):
 
             content_args = {
                 'image': snip['thumbnails']['high']['url'],
-                'desc': '<br>'.join(snip['description'].split('\n'))
+                'content': self.__parse_content(snip)
                 # TODO: some comments i think?
                 # 'comments':
             }
@@ -98,3 +108,5 @@ class YoutubeSource(RssSource):
             ret.append(e)
 
         return ret
+
+# TODO: add request throttler per 100s (since youtube limits)
