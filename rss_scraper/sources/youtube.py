@@ -2,7 +2,7 @@
 from os import path
 import re
 import string
-import dateutil.parser as dateparser
+import aniso8601
 from feedgen.feed import FeedGenerator
 from feedgen.entry import FeedEntry
 from apiclient.discovery import build as youtube_build
@@ -64,6 +64,13 @@ class YoutubeSource(RssSource):
             log.exception()
             raise ValueError('invalid rss path type')
 
+    def __parse_duration(self, seconds):
+        mins, secs = divmod(seconds, 60)
+        if mins >= 60:
+            hours, mins = divmod(mins, 60)
+            return '%02d:%02d:%02d' % (hours, mins, secs)
+        return '%02d:%02d' % (mins, secs)
+
     def __parse_content(self, snippet):
         desc = re.sub(self.__URL_RE, r'<a href="\1">\1</a>', snippet['description'])
         return '<br>'.join(desc.split('\n'))
@@ -82,21 +89,29 @@ class YoutubeSource(RssSource):
     def _get_entries(self):
         playlist = self.__api.playlistItems().list(
             playlistId=self.__uploads_id,
-            part="snippet",
+            part="contentDetails",
             maxResults=20
         ).execute()
 
+        videos = self.__api.videos().list(
+            id=','.join(item['contentDetails']['videoId'] for item in playlist['items']),
+            part='snippet,contentDetails'
+        ).execute()
+
         ret = []
-        for item in playlist['items']:
+        for item in videos['items']:
             snip = item['snippet']
+            duration = self.__parse_duration(aniso8601.parse_duration(item['contentDetails']['duration']).seconds)
+            title = '%s [%s]' % (snip['title'], duration)
+
             e = FeedEntry()
             e.load_extension('dc')
-
             e.dc.dc_creator('none')
-            e.title(snip['title'])
-            e.link(href=self.__VIDEO_URL % snip['resourceId']['videoId'], rel='alternate')
-            e.description(snip['title'])
-            e.pubdate(dateparser.parse(snip['publishedAt']))
+
+            e.title(title)
+            e.link(href=self.__VIDEO_URL % item['id'], rel='alternate')
+            e.description(title)
+            e.pubdate(aniso8601.parse_datetime(snip['publishedAt']))
 
             content_args = {
                 'image': snip['thumbnails']['high']['url'],
